@@ -2912,11 +2912,27 @@ class CNCjob(Geometry):
                         gcode += "M03 S%d\n" % int(self.spindlespeed)
                     else:
                         gcode += "M03\n"  # Spindle start
+                
+                # Drilling points in nearest neighbor order
+                c_point =  points[tool].pop(0)
+                c_x, c_y = c_point.coords.xy
+                gcode += t % (c_x[0], c_y[0])
+                gcode += down + up_to_zero + up
 
-                # Drillling!
-                for point in points[tool]:
-                    x, y = point.coords.xy
-                    gcode += t % (x[0], y[0])
+                for i in range(len(points[tool])):
+                    min_d = 10000000.0
+                    min_i = 0
+                    # Calculate the distance to the current point and find the minimum
+                    for id_p, point in enumerate(points[tool]):
+                        x, y = point.coords.xy
+                        d =  (x[0] - c_x[0])*(x[0] - c_x[0]) + (y[0] - c_y[0])*(y[0] - c_y[0])
+                        if d < min_d:
+                            min_d = d
+                            min_i = id_p
+                    c_point = points[tool].pop(min_i)
+                    c_x, c_y = c_point.coords.xy
+                    # log.debug("Drill at pos (%f, %f)." % (c_x[0],c_y[0]))
+                    gcode += t % (c_x[0], c_y[0])
                     gcode += down + up_to_zero + up
 
         gcode += t % (0, 0)
